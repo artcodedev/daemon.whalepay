@@ -1,0 +1,155 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Currency {
+  RUB
+  USD
+}
+
+enum Status {
+  PROCESS
+  PENDING_PAY
+  PENDING_CARD
+  PENDING_TRX
+  SUCCESS
+  ERROR
+  EXITED
+  REQVER
+}
+
+enum Errors {
+  PROXY
+  LOGIN
+  NETWORK
+  NOTFOUNDELEM
+  PARSE
+  TIMEEND
+  SESSIONERROR
+  REQVER
+  OTHER
+  NONE
+  CODESMS
+  DELETESMS
+}
+
+enum WithdrawStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model Merchant {
+  id         Int        @id @default(autoincrement())
+  uid        String     @unique
+  name       String
+  login      String     @unique
+  password   String
+  phone      String
+  email      String
+  secret_key String
+  sessions   Session[]
+  Withdraws  Withdraw[]
+  created_at BigInt
+  status     Boolean
+}
+
+model Session {
+  id           Int       @id @default(autoincrement())
+  uid          String    @unique
+  merchant     Merchant  @relation(fields: [merchant_id], references: [id])
+  merchant_id  Int
+  amount       Float
+  currency     Currency
+  status       Status
+  description  String
+  paid         Boolean
+  domain       String
+  callback     String
+  metadata     Json
+  payment      Payment[]
+  created_at   BigInt
+  status_error Errors?
+}
+
+model Payment {
+  id               Int     @id @default(autoincrement())
+  time_opened      String
+  timezone         Int
+  browser_version  String
+  browser_language String
+  ip               String
+  email            String
+  session          Session @relation(fields: [session_uid], references: [uid], onUpdate: NoAction)
+  session_uid      String  @unique
+  time_closed      BigInt?
+  time_paid        Int?
+  from             String?
+  card_id          Int?
+  created_at       BigInt
+  trx              String?
+  bank_uid         String
+  currency_symbol  String
+  amount           Float
+}
+
+model Card {
+  id                 Int     @id @default(autoincrement())
+  card_number        String  @unique
+  card_holder        String
+  card_receiver      String
+  card_cvv           String
+  card_valid_thru    String
+  card_phone         String
+  card_login         String  @unique
+  card_password      String
+  card_pin           String
+  card_secret        String
+  active             Boolean
+  busy               Boolean
+  balance            Int
+  withdraw_avaliable Boolean @default(false)
+  bank_uid           String
+}
+
+model Withdraw {
+  id                   Int            @id @default(autoincrement())
+  merchant             Merchant       @relation(fields: [merchant_id], references: [id])
+  merchant_id          Int
+  card_id              Int
+  withdraw_card_number String
+  amount               Int
+  status               WithdrawStatus
+  message              String?
+  created_at           BigInt
+  updated_at           BigInt
+  status_error         Errors?
+}
+
+model Banks {
+  id             Int      @id @default(autoincrement())
+  title          String
+  status         Boolean
+  uid            String   @unique
+  currency       Currency
+  currencySymbol String
+}
+
+model UsersAdmin {
+  id           Int    @id @default(autoincrement())
+  name         String
+  login        String @unique
+  password     String
+  merchant_uid String
+}
