@@ -21,10 +21,6 @@ interface ResponseFetch {
     message: string
 }
 
-interface Response {
-    status: boolean
-}
-
 class Daemon {
 
     private main_url: string = 'http://localhost:3006/micro/amount/';
